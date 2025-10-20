@@ -224,7 +224,7 @@ export type ValueBaseTree<T> = funcTableToInstanceTree<T, Instance>
 --[[
 	Writes a <code>ValueBaseTree</code> from the given data table, writing into <code>parent</code> if specified.
 ]]
-local function writeValueBaseTree <T>(data: T, parent: Instance?): ValueBaseTree<T>
+local function writeValueBaseTree <T>(data: T, parent: Instance?, setValues: boolean?, callback: (instance: Instance, sourceTable: {[string]: any}, key: string) -> ()?): ValueBaseTree<T>
 	parent = parent or Instance.new("Folder")
 	
 	for key, value in data :: {[string]: any} do
@@ -234,7 +234,7 @@ local function writeValueBaseTree <T>(data: T, parent: Instance?): ValueBaseTree
 		if not valueInstance then
 			valueInstance = newValueBaseFromValue(value :: any)
 			
-			-- check if a valueInstance was actually created
+			-- check if valueInstance failed to create
 			if not valueInstance then
 				warn(`Failed to create value instance for {value}!`)
 				
@@ -244,11 +244,15 @@ local function writeValueBaseTree <T>(data: T, parent: Instance?): ValueBaseTree
 			valueInstance.Name = key
 			valueInstance.Parent = parent
 		end
+		
+		if callback then
+			callback(valueInstance, data, key)
+		end
 
 		if valueType == "table" then
 			-- Recursively create instances
-			(writeValueBaseTree :: any)(value, valueInstance)
-		else
+			(writeValueBaseTree :: any)(value, valueInstance, setValues, callback)
+		elseif setValues then
 			(valueInstance :: any).Value = value
 		end
 	end
