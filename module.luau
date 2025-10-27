@@ -155,36 +155,6 @@ end
 
 ValueBaseUtils.newValueBaseFromTypeOf = newValueBaseFromTypeOf
 
---[[
-	Reads a data table from the given <code>ValueBaseTree</code>, writing into <code>dst</code> if specified.
-
-	Returns <code>dst</code>.
-]]
-local function readValueBaseTree <K, V>(dataTree: Instance, dst: {[K]: V}?): ({[K]: V} & {[string]: any})
-	dst = dst or {}
-
-	for _, child in dataTree:GetChildren() do
-		if child:IsA("ValueBase") then
-			dst[child.Name] = (child :: any).Value
-		elseif child:IsA("Folder") then
-			local childName = child.Name
-			local passDst = dst[childName]
-
-			if not passDst then
-				passDst = {}
-				dst[childName] = passDst
-			end
-
-			-- Recursively read
-			readValueBaseTree(child, passDst)
-		end
-	end
-
-	return dst
-end
-
-ValueBaseUtils.readValueBaseTree = readValueBaseTree
-
 type function funcTableToInstanceTree(t: type, folderClass: type)
 	local SOURCE_STR = "TableToInstanceTree<t, folderClass>"
 	
@@ -193,7 +163,7 @@ type function funcTableToInstanceTree(t: type, folderClass: type)
 		return types.unknown
 	end
 	
-	local TABLE_VALUE_OVERRIDE_KEY = types.singleton("_TableValueOverride")
+	local TABLE_VALUE_OVERRIDE_KEY = types.singleton("ParentValue")
 	
 	local function build(dst: type, data: type)
 		for keyType, rwValue in data:properties() do
@@ -232,14 +202,14 @@ local function writeValueBaseTree <T>(data: T, parent: Instance?, setValues: boo
 		
 		if not valueInstance then
 			if valueType == "table" then
-				local overrideValue = value._TableValueOverride
+				local overrideValue = value.ParentValue
 				if overrideValue then
 					valueInstance = (newValueBaseFromValue :: any)(overrideValue, setValues)
 				else
 					valueInstance = (newValueBaseFromTypeOf :: any)("table" :: "table")
 				end
 				
-				value._TableValueOverride = nil
+				value.ParentValue = nil
 			else
 				valueInstance = (newValueBaseFromValue :: any)(value :: any, setValues)
 			end
@@ -271,5 +241,47 @@ local function writeValueBaseTree <T>(data: T, parent: Instance?, setValues: boo
 end
 
 ValueBaseUtils.writeValueBaseTree = writeValueBaseTree
+
+--[[
+	Reads a data table from the given <code>ValueBaseTree</code>, writing into <code>dst</code> if specified.
+	Returns <code>dst</code>.
+]]
+local function readValueBaseTree <K, V>(dataTree: Instance, dst: {[K]: V}?): ({[K]: V} & {[string]: any})
+	dst = dst or {}
+
+	for _, child in dataTree:GetChildren() do
+		local isValueBase = child:IsA("ValueBase")
+		local isFolder = not isValueBase and child:IsA("Folder")
+		
+		-- Ignore non-ValueBase or Folder instances
+		if not isValueBase and not isFolder then
+			continue
+		end
+		
+		local descendant = isFolder or (child:FindFirstChildWhichIsA("ValueBase") or child:FindFirstChildWhichIsA("Folder"))
+		if descendant then
+			local childName = child.Name
+			local passDst = dst[childName] :: {[string]: any}
+
+			if not passDst then
+				passDst = {} :: {[string]: any}
+				dst[childName] = passDst
+			end
+
+			if isValueBase then
+				passDst.ParentValue = (child :: any).Value
+			end
+
+			-- Recursively read
+			readValueBaseTree(child, passDst)
+		else
+			dst[child.Name] = (child :: any).Value
+		end
+	end
+
+	return dst
+end
+
+ValueBaseUtils.readValueBaseTree = readValueBaseTree
 
 return ValueBaseUtils
