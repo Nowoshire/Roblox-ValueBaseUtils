@@ -106,13 +106,7 @@ type function funcValueBaseFromTypeOfString(basicClasses: type, robloxClasses: t
 	local SOURCE_STR = "ValueBaseFromTypeString<basicClasses, robloxClasses, value>"
 
 	if not value:is("singleton") then
-		print(
-			`{SOURCE_STR} expects a string singleton as the second type argument, got {value.tag} instead.{
-			if value:is("string")
-				then " If you have passed a string literal, it has likely been reduced to the basic type when passed through the function generic, typecast the string literal as itself to fix this error."
-				else ""
-			}`
-		)
+		print(`{SOURCE_STR} expects a string singleton as the second type argument, got {value.tag} instead.`)
 		
 		if value:is("string") then
 			return types.unknown
@@ -199,18 +193,23 @@ type function funcTableToInstanceTree(t: type, folderClass: type)
 		return types.unknown
 	end
 	
+	local TABLE_VALUE_OVERRIDE_KEY = types.singleton("_TableValueOverride")
+	
 	local function build(dst: type, data: type)
 		for keyType, rwValue in data:properties() do
-			local valueType = (rwValue.read or rwValue.write) :: type
+			local value = (rwValue.read or rwValue.write) :: type
 			
-			if not valueType:is("table") then
-				dst:setproperty(keyType, ValueBaseFromValueType(valueType))
+			if not value:is("table") then
+				dst:setproperty(keyType, ValueBaseFromValueType(value))
 				continue
 			end
 			
-			-- recursively build
-			local subDst = build(types.newtable(), valueType)
-			dst:setproperty(keyType, types.intersectionof(subDst, folderClass))
+			local overrideValue = value:readproperty(TABLE_VALUE_OVERRIDE_KEY)
+			value:setproperty(TABLE_VALUE_OVERRIDE_KEY)
+			
+			local subDst = build(types.newtable(), value) -- recursively build
+			
+			dst:setproperty(keyType, types.intersectionof(subDst, overrideValue and ValueBaseFromValueType(overrideValue) or folderClass))
 		end
 		
 		return dst
@@ -232,7 +231,18 @@ local function writeValueBaseTree <T>(data: T, parent: Instance?, setValues: boo
 		local valueInstance = parent:FindFirstChild(key)
 		
 		if not valueInstance then
-			valueInstance = newValueBaseFromValue(value :: any)
+			if valueType == "table" then
+				local overrideValue = value._TableValueOverride
+				if overrideValue then
+					valueInstance = (newValueBaseFromValue :: any)(overrideValue, setValues)
+				else
+					valueInstance = (newValueBaseFromTypeOf :: any)("table" :: "table")
+				end
+				
+				value._TableValueOverride = nil
+			else
+				valueInstance = (newValueBaseFromValue :: any)(value :: any, setValues)
+			end
 			
 			-- check if valueInstance failed to create
 			if not valueInstance then
