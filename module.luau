@@ -226,16 +226,16 @@ local function writeValueBaseTree <T>(data: T, parent: Instance?, setValues: boo
 			valueInstance.Name = key
 			valueInstance.Parent = parent
 		end
-		
-		if callback then
-			callback(valueInstance, data, key)
-		end
 
 		if valueType == "table" then
 			-- Recursively create instances
 			(writeValueBaseTree :: any)(value, valueInstance, setValues, callback)
 		elseif setValues then
 			(valueInstance :: any).Value = value
+		end
+		
+		if callback then
+			callback(valueInstance, data, key)
 		end
 	end
 	
