@@ -161,7 +161,7 @@ type function funcTableToInstanceTree(t: type, folderClass: type)
 	local SOURCE_STR = "TableToInstanceTree<t, folderClass>"
 	
 	if not t:is("table") then
-		print(`{SOURCE_STR} expects a tabletype as the second type argument, got {t.tag} instead`)
+		print(`{SOURCE_STR} expects a tabletype as the first type argument, got {t.tag} instead`)
 		return types.unknown
 	end
 	
