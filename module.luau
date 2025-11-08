@@ -181,7 +181,10 @@ type function funcTableToInstanceTree(t: type, folderClass: type)
 			
 			local subDst = build(types.newtable(), value) -- recursively build
 			
-			dst:setproperty(keyType, types.intersectionof(subDst, overrideValue and ValueBaseFromValueType(overrideValue) or folderClass))
+			dst:setproperty(keyType, if overrideValue ~= nil
+				then types.intersectionof(subDst, ValueBaseFromValueType(overrideValue))
+				else types.intersectionof(subDst, folderClass)
+			)
 		end
 		
 		return dst
