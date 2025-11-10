@@ -205,14 +205,14 @@ local function writeValueBaseTree <T>(data: T, parent: Instance?, setValues: boo
 	parent = parent or Instance.new("Folder")
 
 	for key, value in data :: {[string]: any} do
+		if shouldBuildCallback and not shouldBuildCallback(value, data, key) then
+			continue
+		end
+		
 		local valueType = type(value)
 		local valueInstance = parent:FindFirstChild(key)
 
 		if not valueInstance then
-			if not shouldBuildCallback(value, data, key) then
-				continue
-			end
-			
 			if valueType == "table" then
 				local overrideValue = value.ParentValue
 				if overrideValue then
