@@ -11,7 +11,7 @@ local VALUEBASE_CLASSTYPE_LOOKUP = {
 	number = "NumberValue",
 	string = "StringValue",
 	table = "Folder",
-	
+
 	BrickColor = "BrickColorValue",
 	CFrame = "CFrameValue",
 	Color3 = "Color3Value",
@@ -44,31 +44,31 @@ type function funcValueBaseFromValueType(basicClasses: type, robloxClasses: type
 	if value:is("any") then
 		return types.any
 	end
-	
+
 	-- Check if v is a classtype
 	if value:is("class") then
 		for _, rwValue in robloxClasses:properties() do
 			local class = rwValue.read :: type
-			
+
 			if not class:is("union") then
 				continue
 			end
-			
+
 			local components = class:components()
 			if components[2] == value then
 				return components[1]
 			end
 		end
-		
+
 		-- couldn't find a match, just assume it's an instance
 		return robloxClasses:readproperty(types.singleton("Instance")) or types.unknown
 	end
-	
+
 	-- Support v singletons (literals) by reducing them to their basic type
 	local basicType = if value:is("singleton")
 		then types.singleton(type(value:value()))
 		else types.singleton(value.tag)
-	
+
 	local class = basicClasses:readproperty(basicType) or robloxClasses:readproperty(basicType)
 	if not class then
 		print(`{value.tag} is not a supported type`)
@@ -86,17 +86,17 @@ export type ValueBaseFromValueType<T> = funcValueBaseFromValueType<ValueBaseClas
 local function newValueBaseFromValue <T>(value: T, setValue: boolean?): (ValueBaseFromValueType<T>)
 	local valueType = typeof(value)
 	local className = VALUEBASE_CLASSTYPE_LOOKUP[valueType]
-	
+
 	if not className then
 		return nil :: any -- typesolver cant resolve T here so it thinks it's `never`, typecast any to silence
 	end
-	
+
 	local valueBase = Instance.new(className)
-	
+
 	if setValue and valueBase:IsA("ValueBase") then
 		valueBase.Value = value
 	end
-	
+
 	return valueBase
 end
 
@@ -107,13 +107,13 @@ type function funcValueBaseFromTypeOfString(basicClasses: type, robloxClasses: t
 
 	if not value:is("singleton") then
 		print(`{SOURCE_STR} expects a string singleton as the second type argument, got {value.tag} instead.`)
-		
+
 		if value:is("string") then
 			print("If you have passed a string literal, it has likely been reduced to the basic type in function generics, typecast the string as the literal of itself to fix this error.")
-			
+
 			return types.unknown
 		end
-		
+
 		return types.singleton(nil)
 	end
 
@@ -125,12 +125,12 @@ type function funcValueBaseFromTypeOfString(basicClasses: type, robloxClasses: t
 
 	local vValueSingleton = types.singleton(vValue)
 	local class = basicClasses:readproperty(vValueSingleton) or robloxClasses:readproperty(vValueSingleton)
-	
+
 	if not class then
 		print(`{vValue} is not a supported type`)
 		return types.singleton(nil)
 	end
-	
+
 	if class:is("union") then
 		return class:components()[1]
 	end
@@ -147,11 +147,11 @@ export type ValueBaseFromTypeOfString<T> = funcValueBaseFromTypeOfString<ValueBa
 ]]
 local function newValueBaseFromTypeOf <T>(typeOfStr: T): (ValueBaseFromTypeOfString<T>)
 	local className = VALUEBASE_CLASSTYPE_LOOKUP[typeOfStr]
-	
+
 	if not className then
 		return nil :: any -- typesolver cant resolve T here so it thinks it's `never`, typecast any to silence
 	end
-	
+
 	return Instance.new(className)
 end
 
@@ -159,37 +159,37 @@ ValueBaseUtils.newValueBaseFromTypeOf = newValueBaseFromTypeOf
 
 type function funcTableToInstanceTree(t: type, folderClass: type)
 	local SOURCE_STR = "TableToInstanceTree<t, folderClass>"
-	
+
 	if not t:is("table") then
 		print(`{SOURCE_STR} expects a tabletype as the first type argument, got {t.tag} instead`)
 		return types.unknown
 	end
-	
+
 	local TABLE_VALUE_OVERRIDE_KEY = types.singleton("ParentValue")
-	
+
 	local function build(dst: type, data: type)
 		for keyType, rwValue in data:properties() do
 			local value = (rwValue.read or rwValue.write) :: type
-			
+
 			if not value:is("table") then
 				dst:setproperty(keyType, ValueBaseFromValueType(value))
 				continue
 			end
-			
+
 			local overrideValue = value:readproperty(TABLE_VALUE_OVERRIDE_KEY)
 			value:setproperty(TABLE_VALUE_OVERRIDE_KEY)
-			
+
 			local subDst = build(types.newtable(), value) -- recursively build
-			
+
 			dst:setproperty(keyType, if overrideValue ~= nil
 				then types.intersectionof(subDst, ValueBaseFromValueType(overrideValue))
 				else types.intersectionof(subDst, folderClass)
 			)
 		end
-		
+
 		return dst
 	end
-	
+
 	return types.intersectionof(build(types.newtable(), t), folderClass)
 end
 
@@ -198,14 +198,21 @@ export type ValueBaseTree<T> = funcTableToInstanceTree<T, Folder>
 --[[
 	Writes a <code>ValueBaseTree</code> from the given data table, writing into <code>parent</code> if specified.
 ]]
-local function writeValueBaseTree <T>(data: T, parent: Instance?, setValues: boolean?, callback: (instance: Instance, sourceTable: {[string]: any}, key: string) -> ()?): ValueBaseTree<T>
+local function writeValueBaseTree <T>(data: T, parent: Instance?, setValues: boolean?,
+	shouldBuildCallback: (value: any, sourceTable: {[string]: any}, key: string) -> (boolean)?,
+	onBuild: (instance: Instance, sourceTable: {[string]: any}, key: string) -> ()?
+): ValueBaseTree<T>
 	parent = parent or Instance.new("Folder")
-	
+
 	for key, value in data :: {[string]: any} do
 		local valueType = type(value)
 		local valueInstance = parent:FindFirstChild(key)
-		
+
 		if not valueInstance then
+			if not shouldBuildCallback(value, data, key) then
+				continue
+			end
+			
 			if valueType == "table" then
 				local overrideValue = value.ParentValue
 				if overrideValue then
@@ -213,35 +220,35 @@ local function writeValueBaseTree <T>(data: T, parent: Instance?, setValues: boo
 				else
 					valueInstance = (newValueBaseFromTypeOf :: any)("table" :: "table")
 				end
-				
+
 				value.ParentValue = nil
 			else
 				valueInstance = (newValueBaseFromValue :: any)(value :: any, setValues)
 			end
-			
+
 			-- check if valueInstance failed to create
 			if not valueInstance then
 				warn(`Failed to create value instance for {value}!`)
-				
+
 				continue
 			end
-			
+
 			valueInstance.Name = key
 			valueInstance.Parent = parent
 		end
 
 		if valueType == "table" then
 			-- Recursively create instances
-			(writeValueBaseTree :: any)(value, valueInstance, setValues, callback)
+			(writeValueBaseTree :: any)(value, valueInstance, setValues, shouldBuildCallback, onBuild)
 		elseif setValues then
 			(valueInstance :: any).Value = value
 		end
 		
-		if callback then
-			callback(valueInstance, data, key)
+		if onBuild then
+			onBuild(valueInstance, data, key)
 		end
 	end
-	
+
 	return parent :: any
 end
 
@@ -257,12 +264,12 @@ local function readValueBaseTree <K, V>(dataTree: Instance, dst: {[K]: V}?): ({[
 	for _, child in dataTree:GetChildren() do
 		local isValueBase = child:IsA("ValueBase")
 		local isFolder = not isValueBase and child:IsA("Folder")
-		
+
 		-- Ignore non-ValueBase or Folder instances
 		if not isValueBase and not isFolder then
 			continue
 		end
-		
+
 		local descendant = isFolder or (child:FindFirstChildWhichIsA("ValueBase") or child:FindFirstChildWhichIsA("Folder"))
 		if descendant then
 			local childName = child.Name
