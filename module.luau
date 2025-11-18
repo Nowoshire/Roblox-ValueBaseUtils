@@ -199,7 +199,7 @@ export type ValueBaseTree<T> = funcTableToInstanceTree<T, Folder>
 	Writes a <code>ValueBaseTree</code> from the given data table, writing into <code>parent</code> if specified.
 ]]
 local function writeValueBaseTree <T>(data: T, parent: Instance?, setValues: boolean?,
-	shouldBuildCallback: (value: any, sourceTable: {[string]: any}, key: string) -> (boolean)?,
+	shouldBuildCallback: ((value: any, sourceTable: {[string]: any}, key: string) -> (boolean))?,
 	onBuild: (instance: Instance, sourceTable: {[string]: any}, key: string) -> ()?
 ): ValueBaseTree<T>
 	parent = parent or Instance.new("Folder")
