@@ -108,12 +108,6 @@ type function funcValueBaseFromTypeOfString(basicClasses: type, robloxClasses: t
 	if not value:is("singleton") then
 		print(`{SOURCE_STR} expects a string singleton as the second type argument, got {value.tag} instead.`)
 
-		if value:is("string") then
-			print("If you have passed a string literal, it has likely been reduced to the basic type in function generics, typecast the string as the literal of itself to fix this error.")
-
-			return types.unknown
-		end
-
 		return types.singleton(nil)
 	end
 
