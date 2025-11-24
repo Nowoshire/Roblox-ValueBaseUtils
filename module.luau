@@ -161,8 +161,17 @@ type function funcTableToInstanceTree(t: type, folderClass: type)
 
 	local TABLE_VALUE_OVERRIDE_KEY = types.singleton("ParentValue")
 
-	local function build(dst: type, data: type)
-		for keyType, rwValue in data:properties() do
+	local function build(dst: type, data: type, recursionDepth: number): (type)
+		recursionDepth += 1
+		
+		-- safeguard to prevent type engine from exploding
+		if recursionDepth > 20 then
+			error("recursion depth limit exceeded")
+		end
+		
+		local properties = data:properties()
+		
+		for keyType, rwValue in properties do
 			local value = (rwValue.read or rwValue.write) :: type
 
 			if not value:is("table") then
@@ -173,18 +182,35 @@ type function funcTableToInstanceTree(t: type, folderClass: type)
 			local overrideValue = value:readproperty(TABLE_VALUE_OVERRIDE_KEY)
 			value:setproperty(TABLE_VALUE_OVERRIDE_KEY)
 
-			local subDst = build(types.newtable(), value) -- recursively build
+			local subDst = build(types.newtable(), value, recursionDepth) -- recursively build
 
 			dst:setproperty(keyType, if overrideValue ~= nil
 				then types.intersectionof(subDst, ValueBaseFromValueType(overrideValue))
 				else types.intersectionof(subDst, folderClass)
 			)
 		end
+		
+		-- indexer support
+		local indexer = data:indexer()
+		if indexer then
+			local value = indexer.readresult
+			if value:is("table") then
+				local overrideValue = value:readproperty(TABLE_VALUE_OVERRIDE_KEY)
+				value:setproperty(TABLE_VALUE_OVERRIDE_KEY)
+				
+				local subIndexer = build(types.newtable(), value, recursionDepth) -- recursively build
+				dst:setindexer(indexer.index, if overrideValue ~= nil
+					then types.intersectionof(subIndexer, ValueBaseFromValueType(overrideValue))
+					else types.intersectionof(subIndexer, folderClass))
+			else
+				dst:setindexer(indexer.index, ValueBaseFromValueType(value))
+			end
+		end
 
 		return dst
 	end
 
-	return types.intersectionof(build(types.newtable(), t), folderClass)
+	return types.intersectionof(build(types.newtable(), t, 0), folderClass)
 end
 
 export type ValueBaseTree<T> = funcTableToInstanceTree<T, Folder>
