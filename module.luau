@@ -159,7 +159,7 @@ type function funcTableToInstanceTree(t: type, folderClass: type)
 		return types.unknown
 	end
 
-	local TABLE_VALUE_OVERRIDE_KEY = types.singleton("ParentValue")
+	local TABLE_VALUE_OVERRIDE_KEY = types.singleton("_self")
 
 	local function build(dst: type, data: type, recursionDepth: number): (type)
 		recursionDepth += 1
@@ -234,14 +234,14 @@ local function writeValueBaseTree <T>(data: T, parent: Instance?, setValues: boo
 
 		if not valueInstance then
 			if valueType == "table" then
-				local overrideValue = value.ParentValue
+				local overrideValue = value._self
 				if overrideValue then
 					valueInstance = (newValueBaseFromValue :: any)(overrideValue, setValues)
 				else
 					valueInstance = (newValueBaseFromTypeOf :: any)("table" :: "table")
 				end
 
-				value.ParentValue = nil
+				value._self = nil
 			else
 				valueInstance = (newValueBaseFromValue :: any)(value :: any, setValues)
 			end
@@ -301,7 +301,7 @@ local function readValueBaseTree <K, V>(dataTree: Instance, dst: {[K]: V}?): ({[
 			end
 
 			if isValueBase then
-				passDst.ParentValue = (child :: any).Value
+				passDst._self = (child :: any).Value
 			end
 
 			-- Recursively read
