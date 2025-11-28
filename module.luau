@@ -78,6 +78,7 @@ end
 
 type function f_ClassFromTypeOf(tyof: type, vbLuau: type, vbRoblox: type, objectValue: type)
 	local tTag = tyof.tag
+	
 	if tTag ~= "singleton" then
 		if tTag == "string" then
 			print([[
@@ -88,7 +89,7 @@ type function f_ClassFromTypeOf(tyof: type, vbLuau: type, vbRoblox: type, object
 				If you are encountering this message with a statically known string, it has likely been reduced to its basic type when passed through function generics.
 				You can cast the typeof string as itself using `"str" :: "str"` as a workaround.
 			]])
-		else
+		elseif tTag ~= "any" then
 			print(`f_ClassFromTypeOf expects a string singleton as the first type argument, got {tTag} instead.`)
 		end
 		
