@@ -144,8 +144,8 @@ type function f_TreeFromTable(
 	local TABLE_SELF_VALUE_KEY = types.singleton("_self")
 	
 	-- Complexity protection limits
-	local BUILD_DEPTH_LIMIT = 16
-	local BUILD_OPERATION_LIMIT = 1024
+	local BUILD_DEPTH_LIMIT = 32
+	local BUILD_OPERATION_LIMIT = 4096
 	
 	local opCount = 0
 	
