@@ -79,6 +79,11 @@ end
 type function f_ClassFromTypeOf(tyof: type, vbLuau: type, vbRoblox: type, objectValue: type)
 	local tTag = tyof.tag
 	
+	-- Skip resolving if tyof is anytype
+	if tTag == "any" then
+		return tyof
+	end
+	
 	if tTag ~= "singleton" then
 		if tTag == "string" then
 			print([[
@@ -89,7 +94,7 @@ type function f_ClassFromTypeOf(tyof: type, vbLuau: type, vbRoblox: type, object
 				If you are encountering this message with a statically known string, it has likely been reduced to its basic type when passed through function generics.
 				You can cast the typeof string as itself using `"str" :: "str"` as a workaround.
 			]])
-		elseif tTag ~= "any" then
+		else
 			print(`f_ClassFromTypeOf expects a string singleton as the first type argument, got {tTag} instead.`)
 		end
 		
@@ -303,7 +308,7 @@ end
 	Callback used for determining what key-value pairs should be built for.
 	<strong>Default Value</strong>: <code>nil</code>
 	
-	<code><strong>OnBuildCallback</strong>: (instance: Instance, sourceTable: {[string]: any}, key: string) -> ()?</code>
+	<code><strong>OnBuildCallback</strong>: ((instance: Instance, sourceTable: {[string]: any}, key: string) -> ())?</code>
 	Callback that is called after each Instance creation.
 	<strong>Default Value</strong>: <code>nil</code>
 ]]
