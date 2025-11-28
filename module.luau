@@ -314,7 +314,7 @@ local function writeValueBaseTree <T, TableClass>(
 		SetValues: boolean?,
 		
 		ShouldBuildCallback: ((value: any, sourceTable: {[string]: any}, key: string) -> (boolean))?,
-		OnBuildCallback: (instance: Instance, sourceTable: {[string]: any}, key: string) -> ()?
+		OnBuildCallback: ((instance: Instance, sourceTable: {[string]: any}, key: string) -> ())?
 	}?
 ): (ValueBaseTree<T>)
 	local tableInstanceClassName = VALUEBASE_CLASS_TYPE_LOOKUP.table
