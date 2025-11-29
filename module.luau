@@ -37,6 +37,20 @@ type ValueBaseRobloxTypes = {
 	Vector3: Vector3Value | Vector3,
 }
 
+type ValueBaseClassNames = {
+	BoolValue: BoolValue,
+	NumberValue: NumberValue,
+	StringValue: StringValue,
+	Folder: Folder,
+	
+	BrickColorValue: BrickColorValue,
+	CFrameValue: CFrameValue,
+	Color3Value: Color3Value,
+	RayValue: RayValue,
+	Vector3Value: Vector3Value,
+	ObjectValue: ObjectValue,
+}
+
 type function f_ClassFromValue(value: type, vbLuau: type, vbRoblox: type, objectValue: type)
 	local vTag = value.tag
 	
@@ -127,6 +141,47 @@ type function f_ClassFromTypeOf(tyof: type, vbLuau: type, vbRoblox: type, object
 	
 	print(`'{value}' is not a supported type`)
 	return types.singleton(nil)
+end
+
+type function f_ClassFromClassName(name: type, classes: type)
+	local nTag = name.tag
+	
+	-- Skip resolving if name is anytype
+	if nTag == "any" then
+		return name
+	end
+	
+	if nTag ~= "singleton" then
+		if nTag == "string" then
+			print([[
+				The type of `f_ClassFromClassName` cannot be statically checked when called with a name string that is not statically known.
+				If you'd like to use an unchecked `f_ClassFromClassName` call, you can cast the name string to `any` using `:: any`.
+				
+				NOTE:
+				If you are encountering this message with a statically known string, it has likely been reduced to its basic type when passed through function generics.
+				You can cast the name string as itself using `"str" :: "str"` as a workaround.
+			]])
+		else
+			print(`f_ClassFromClassName expects a string singleton as the first type argument, got {nTag} instead.`)
+		end
+	end
+	
+	local value = name:value()
+	local valueType = type(value)
+	if valueType ~= "string" then
+		print(`f_ClassFromClassName expects a string singleton as the first type argument, got {valueType} singleton instead.`)
+		return types.unknown	
+	end
+	
+	local valueSingleton = types.singleton(value) -- Convert to singleton so we can read it from table
+	
+	local class = classes:readproperty(valueSingleton)
+	if class then
+		return class
+	end
+	
+	print(`'{value}' is not a supported class`)
+	return types.unknown
 end
 
 type function f_TreeFromTable(
@@ -236,6 +291,10 @@ export type ValueBaseFromTypeOf<T> = f_ClassFromTypeOf<
 export type ValueBaseTree<T, TableClass = Folder> = f_TreeFromTable<
 	T, TableClass,
 	ValueBaseLuauTypes, ValueBaseRobloxTypes, ObjectValue
+>
+export type ValueBaseFromClassName<T> = f_ClassFromClassName<
+	T,
+	ValueBaseClassNames
 >
 
 -- Module --
