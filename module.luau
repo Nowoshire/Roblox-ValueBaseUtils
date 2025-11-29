@@ -164,6 +164,8 @@ type function f_ClassFromClassName(name: type, classes: type)
 		else
 			print(`f_ClassFromClassName expects a string singleton as the first type argument, got {nTag} instead.`)
 		end
+		
+		return types.unknown
 	end
 	
 	local value = name:value()
