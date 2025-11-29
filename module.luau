@@ -354,12 +354,12 @@ end
 	<code><strong>params</strong>: { [string]: any }?</code>
 	The parameters to use for building the ValueBaseTree.
 	
+	<code><strong>dst</strong>: Instance?</code>
+	The Instance to write into.
+	<strong>Default Value</strong>: <code>Folder</code>
+	
 	<strong>[ Parameters ]</strong>
 	<strong>Note:</strong> Callbacks are not considered in the resultant type.
-	
-	<code><strong>Parent</strong>: Instance?</code>
-	The Instance to write into.
-	<strong>Default Value</strong>: <code>Instance.new(VALUEBASE_CLASS_TYPE_LOOKUP.table)</code>
 	
 	<code><strong>SetValues</strong>: boolean?</code>
 	Whether to set the <code>ValueBase.Value</code> to the given value if applicable.
@@ -375,16 +375,15 @@ end
 ]]
 local function writeValueBaseTree <T, TableClass>(
 	data: T,
+	dst: Instance?,
 	params: {
-		Parent: Instance?,
 		SetValues: boolean?,
 		
 		ShouldBuildCallback: ((value: any, sourceTable: {[string]: any}, key: string) -> (boolean))?,
 		OnBuildCallback: ((instance: Instance, sourceTable: {[string]: any}, key: string) -> ())?
 	}?
 ): (ValueBaseTree<T>)
-	local tableInstanceClassName = VALUEBASE_CLASS_TYPE_LOOKUP.table
-	local parent = params and params.Parent or Instance.new(tableInstanceClassName)
+	local parent = dst or Instance.new("Folder")
 	local setValues = params and params.SetValues
 	local shouldBuildCallback = params and params.ShouldBuildCallback
 	local onBuildCallback = params and params.OnBuildCallback
@@ -395,7 +394,7 @@ local function writeValueBaseTree <T, TableClass>(
 			continue
 		end
 
-		local valueType = type(value)
+		local valueType = typeof(value)
 		local valueInstance = parent:FindFirstChild(key)
 
 		-- Instance doesn't exist, or isn't the correct class
@@ -405,7 +404,7 @@ local function writeValueBaseTree <T, TableClass>(
 				if overrideValue then
 					valueInstance = fromValue(overrideValue, setValues)
 				else
-					valueInstance = Instance.new(tableInstanceClassName)
+					valueInstance = Instance.new("Folder")
 				end
 
 				value._self = nil
@@ -416,7 +415,6 @@ local function writeValueBaseTree <T, TableClass>(
 			-- Check if valueInstance failed to create
 			if not valueInstance then
 				warn(`Failed to create value instance for {value}!`)
-
 				continue
 			end
 
@@ -425,7 +423,7 @@ local function writeValueBaseTree <T, TableClass>(
 		end
 
 		if valueType == "table" then
-			writeValueBaseTree(value, params) -- Recursively create instances
+			writeValueBaseTree(value, valueInstance, params) -- Recursively create instances
 		elseif setValues then
 			valueInstance.Value = value
 		end
