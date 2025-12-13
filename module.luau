@@ -53,6 +53,14 @@ type ValueBaseClassNames = {
 	ObjectValue: ObjectValue,
 }
 
+-- A union of all ValueBase objects, for convenience.
+export type ValueObject =
+| BoolValue | NumberValue | StringValue
+| BrickColorValue | CFrameValue | Color3Value
+| RayValue | Vector3Value | ObjectValue
+
+export type ValueObjectWithFolder = ValueObject | Folder
+
 type function f_ClassFromValue(value: type, vbLuau: type, vbRoblox: type, objectValue: type)
 	local vTag = value.tag
 	
@@ -383,7 +391,7 @@ local function writeValueBaseTree <T, TableClass>(
 		SetValues: boolean?,
 		
 		ShouldBuildCallback: ((value: any, sourceTable: {[string]: any}, key: string) -> (boolean))?,
-		OnBuildCallback: ((instance: Instance, value: any, sourceTable: {[string]: any}, key: string) -> ())?
+		OnBuildCallback: ((instance: ValueObjectWithFolder, value: any, sourceTable: {[string]: any}, key: string) -> ())?
 	}?
 ): (ValueBaseTree<T>)
 	local parent = dst or Instance.new("Folder")
