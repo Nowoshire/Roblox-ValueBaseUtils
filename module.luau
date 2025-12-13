@@ -380,7 +380,7 @@ local function writeValueBaseTree <T, TableClass>(
 		SetValues: boolean?,
 		
 		ShouldBuildCallback: ((value: any, sourceTable: {[string]: any}, key: string) -> (boolean))?,
-		OnBuildCallback: ((instance: Instance, sourceTable: {[string]: any}, key: string) -> ())?
+		OnBuildCallback: ((instance: Instance, value: any, sourceTable: {[string]: any}, key: string) -> ())?
 	}?
 ): (ValueBaseTree<T>)
 	local parent = dst or Instance.new("Folder")
@@ -430,7 +430,7 @@ local function writeValueBaseTree <T, TableClass>(
 
 		-- Call onBuild callback
 		if onBuildCallback then
-			onBuildCallback(valueInstance, data, key)
+			onBuildCallback(valueInstance, value, data, key)
 		end
 	end
 
