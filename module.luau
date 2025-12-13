@@ -21,6 +21,8 @@ local VALUEBASE_CLASS_TYPE_LOOKUP = {
 	Instance = "ObjectValue",
 }
 
+local TABLE_SELF_VALUE_KEY = "_self"
+
 -- Types --
 type ValueBaseLuauTypes = {
 	boolean: BoolValue,
@@ -188,7 +190,11 @@ end
 
 type function f_TreeFromTable(
 	data: type, tableClass: type,
-	vbLuau: type, vbRoblox: type, objectValue: type
+	vbLuau: type, vbRoblox: type, objectValue: type,
+	
+	-- Used for overriding the class of the instance for tables
+	-- to allow parenting to ValueBase instances directly.
+	TABLE_SELF_VALUE_KEY: type
 )
 	local dTag = data.tag
 	
@@ -201,10 +207,6 @@ type function f_TreeFromTable(
 		print(`f_TreeFromTable expects a tabletype as the first type argument, got {dTag} instead.`)
 		return types.unknown
 	end
-	
-	-- Used for overriding the class of the instance for tables
-	-- to allow parenting to ValueBase instances directly.
-	local TABLE_SELF_VALUE_KEY = types.singleton("_self")
 	
 	-- Complexity protection limits
 	local BUILD_DEPTH_LIMIT = 32
@@ -389,6 +391,11 @@ local function writeValueBaseTree <T, TableClass>(
 	local onBuildCallback = params and params.OnBuildCallback
 	
 	for key, value in data :: {[string]: any} do
+		-- Ignore override key
+		if key == TABLE_SELF_VALUE_KEY then
+			continue
+		end
+		
 		-- Call shouldBuildCallback to determine if this key-value pair should be built
 		if shouldBuildCallback and not shouldBuildCallback(value, data, key) then
 			continue
@@ -400,14 +407,12 @@ local function writeValueBaseTree <T, TableClass>(
 		-- Instance doesn't exist, or isn't the correct class
 		if not valueInstance or not valueInstance:IsA(VALUEBASE_CLASS_TYPE_LOOKUP[valueType]) then
 			if valueType == "table" then
-				local overrideValue = value._self
+				local overrideValue = value[TABLE_SELF_VALUE_KEY]
 				if overrideValue then
 					valueInstance = fromValue(overrideValue, setValues)
 				else
 					valueInstance = Instance.new("Folder")
 				end
-
-				value._self = nil
 			else
 				valueInstance = fromValue(value, setValues)
 			end
@@ -466,7 +471,7 @@ local function readValueBaseTree <K, V>(dataTree: Instance, dst: {[K]: V}?): ({[
 			end
 
 			if isValueBase then
-				passDst._self = (child :: any).Value
+				passDst[TABLE_SELF_VALUE_KEY] = (child :: any).Value
 			end
 
 			-- Recursively read
