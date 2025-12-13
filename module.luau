@@ -21,7 +21,7 @@ local VALUEBASE_CLASS_TYPE_LOOKUP = {
 	Instance = "ObjectValue",
 }
 
-local TABLE_SELF_VALUE_KEY = "_self"
+local TABLE_SELF_VALUE_KEY = "_self" -- You need to update ValueBaseTree type as well, as typeof reduces this singleton to the basic string type.
 
 -- Types --
 type ValueBaseLuauTypes = {
@@ -295,7 +295,7 @@ export type ValueBaseFromTypeOf<T> = f_ClassFromTypeOf<
 export type ValueBaseTree<T, TableClass = Folder> = f_TreeFromTable<
 	T, TableClass,
 	ValueBaseLuauTypes, ValueBaseRobloxTypes, ObjectValue,
-	typeof(TABLE_SELF_VALUE_KEY)
+	"_self" -- typeof reduces this to the basic type
 >
 export type ValueBaseFromClassName<T> = f_ClassFromClassName<
 	T,
