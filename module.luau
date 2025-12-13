@@ -294,7 +294,8 @@ export type ValueBaseFromTypeOf<T> = f_ClassFromTypeOf<
 >
 export type ValueBaseTree<T, TableClass = Folder> = f_TreeFromTable<
 	T, TableClass,
-	ValueBaseLuauTypes, ValueBaseRobloxTypes, ObjectValue
+	ValueBaseLuauTypes, ValueBaseRobloxTypes, ObjectValue,
+	typeof(TABLE_SELF_VALUE_KEY)
 >
 export type ValueBaseFromClassName<T> = f_ClassFromClassName<
 	T,
