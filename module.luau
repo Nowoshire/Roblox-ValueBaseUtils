@@ -241,9 +241,9 @@ type function f_TreeFromTable(
 
 		return types.intersectionof(
 			build(types.newtable(), value, depth + 1), -- recursively build
-			if selfValue ~= nil
-			then f_ClassFromValue(selfValue, vbLuau, vbRoblox, objectValue)
-			else tableClass
+			if selfValue
+				then f_ClassFromValue(selfValue, vbLuau, vbRoblox, objectValue)
+				else tableClass
 		)
 	end
 	
@@ -285,10 +285,7 @@ type function f_TreeFromTable(
 	end
 	
 	-- Build and return type
-	return types.intersectionof(
-		build(types.newtable(), data, 0),
-		tableClass
-	)
+	return buildTableValue(data, 0)
 end
 
 -- User friendly types
