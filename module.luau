@@ -377,7 +377,7 @@ end
 	Callback used for determining what key-value pairs should be built for.
 	<strong>Default Value</strong>: <code>nil</code>
 	
-	<code><strong>OnBuildCallback</strong>: ((instance: Instance, sourceTable: {[string]: any}, key: string) -> ())?</code>
+	<code><strong>OnBuildCallback</strong>: ((instance: ValueObjectWithFolder, value: any, sourceTable: {[string]: any}, key: string) -> ())?</code>
 	Callback that is called after each Instance creation.
 	<strong>Default Value</strong>: <code>nil</code>
 ]]
