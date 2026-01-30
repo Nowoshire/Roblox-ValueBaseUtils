@@ -95,7 +95,7 @@ type function f_ClassFromValue(value: type, vbLuau: type, vbRoblox: type, object
 	end
 	
 	-- Roblox types --
-	if vTag == "class" then
+	if vTag == "extern" then
 		for _, rwType in vbRoblox:properties() do
 			local classAndValue = rwType.read :: type
 			local components = classAndValue:components()
