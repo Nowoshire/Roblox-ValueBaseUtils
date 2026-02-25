@@ -357,7 +357,7 @@ local function fromValue <T>(value: T, setValue: boolean?): (ValueBaseFromValue<
 		valueBase.Value = value
 	end
 
-	return valueBase
+	return valueBase :: any
 end
 
 ValueBaseUtils.fromValue = fromValue
